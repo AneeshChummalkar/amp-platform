@@ -2,10 +2,21 @@ export async function POST(req: Request) {
   const body = await req.json();
   const { prompt } = body;
 
-  console.log("Received prompt:", prompt);
+  // Simple agent planner
+  const agentPlan = {
+    name: "Generated Agent",
+    goal: prompt,
+    steps: [
+      "Understand the user request",
+      "Search for relevant information",
+      "Process and analyze data",
+      "Return a structured result"
+    ],
+    tools: ["web-search", "data-parser", "summary-engine"]
+  };
 
   return Response.json({
-    message: "Agent generation started",
-    prompt: prompt
+    success: true,
+    agent: agentPlan
   });
 }

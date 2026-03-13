@@ -4,22 +4,23 @@ import { useState } from "react";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
+  const [agent, setAgent] = useState<any>(null);
 
   const handleGenerate = async () => {
-  const response = await fetch("/api/generate", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ prompt }),
-  });
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt }),
+    });
 
-  const data = await response.json();
-  console.log("API Response:", data);
-};
+    const data = await response.json();
+    setAgent(data.agent);
+  };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-black text-white">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-black text-white p-6">
       <h1 className="text-4xl font-bold mb-4">AMP</h1>
 
       <p className="text-gray-400 mb-8">
@@ -42,6 +43,34 @@ export default function Home() {
           Generate Agent
         </button>
       </div>
+
+      {agent && (
+        <div className="mt-10 w-full max-w-xl bg-gray-900 p-6 rounded-lg">
+          <h2 className="text-2xl font-bold mb-4">{agent.name}</h2>
+
+          <p className="mb-4 text-gray-300">
+            <strong>Goal:</strong> {agent.goal}
+          </p>
+
+          <div className="mb-4">
+            <strong>Steps:</strong>
+            <ul className="list-disc list-inside text-gray-300">
+              {agent.steps.map((step: string, i: number) => (
+                <li key={i}>{step}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <strong>Tools:</strong>
+            <ul className="list-disc list-inside text-gray-300">
+              {agent.tools.map((tool: string, i: number) => (
+                <li key={i}>{tool}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

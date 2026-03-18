@@ -1,228 +1,217 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import ReactMarkdown from "react-markdown"
-import { supabase } from "../lib/supabase"
+import { useState, useCallback, useMemo, useEffect } from "react"
+import { Sidebar } from "@/components/dashboard/sidebar"
+import { MainPanel } from "@/components/dashboard/main-panel"
+import { PricingModal } from "@/components/dashboard/pricing-modal"
+import { DemoWalkthrough } from "@/components/dashboard/demo-walkthrough"
+import { supabase } from "@/lib/supabase"
 
-export default function Home() {
+interface AgentData {
+  id: string
+  name: string
+  goal: string
+  steps: string[]
+  tools: string[]
+  createdAt: Date
+}
 
-  const [prompt,setPrompt] = useState("")
-  const [result,setResult] = useState("")
-  const [loading,setLoading] = useState(false)
-  const [thinking,setThinking] = useState(false)
-  const [agents,setAgents] = useState<any[]>([])
+const mockAgentTemplates = [
+  {
+    name: "Customer Support Agent",
+    goal: "Handle customer inquiries and resolve issues efficiently while maintaining a friendly and professional tone.",
+    steps: [
+      "Greet the customer and identify their issue",
+      "Search knowledge base for relevant solutions",
+      "Provide step-by-step guidance to resolve the problem",
+      "Escalate to human support if unable to resolve",
+      "Follow up to ensure customer satisfaction",
+    ],
+    tools: ["Knowledge Base", "Ticket System", "Email API", "CRM Integration"],
+  },
+  {
+    name: "Research Assistant",
+    goal: "Gather, analyze, and synthesize information from multiple sources to provide comprehensive research summaries.",
+    steps: [
+      "Understand the research topic and scope",
+      "Search academic and web sources for relevant information",
+      "Analyze and cross-reference findings",
+      "Synthesize information into coherent summaries",
+      "Cite sources and highlight key insights",
+    ],
+    tools: ["Web Search", "Academic Database", "PDF Parser", "Citation Generator"],
+  },
+  {
+    name: "Code Review Agent",
+    goal: "Review code submissions for quality, security vulnerabilities, and adherence to best practices.",
+    steps: [
+      "Parse and understand the code structure",
+      "Check for common security vulnerabilities",
+      "Analyze code complexity and performance",
+      "Verify adherence to coding standards",
+      "Generate detailed feedback report",
+    ],
+    tools: ["Static Analyzer", "Security Scanner", "Linter", "Git Integration"],
+  },
+  {
+    name: "Content Writer Agent",
+    goal: "Create engaging, SEO-optimized content tailored to the target audience and brand voice.",
+    steps: [
+      "Analyze content brief and target keywords",
+      "Research topic and gather relevant information",
+      "Create outline and structure content",
+      "Write compelling copy with proper formatting",
+      "Optimize for SEO and readability",
+    ],
+    tools: ["SEO Analyzer", "Grammar Checker", "Plagiarism Detector", "Image Suggester"],
+  },
+]
 
-  async function loadAgents(){
+export default function Dashboard() {
+  const [agents, setAgents] = useState<AgentData[]>([])
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [isPricingOpen, setIsPricingOpen] = useState(false)
+  const [isDemoOpen, setIsDemoOpen] = useState(false)
+  const [prompt, setPrompt] = useState("")
 
-    const { data } = await supabase
-      .from("agents")
-      .select("*")
-      .order("created_at",{ascending:false})
+  // 🔥 LOAD AGENTS FROM SUPABASE
+  useEffect(() => {
+    const loadAgents = async () => {
+      const { data, error } = await supabase
+        .from("agents")
+        .select("*")
+        .order("created_at", { ascending: false })
 
-    if(data) setAgents(data)
-
-  }
-
-  useEffect(()=>{
-    loadAgents()
-  },[])
-
-  const newAgent = ()=>{
-    setPrompt("")
-    setResult("")
-    setLoading(false)
-    setThinking(false)
-  }
-
-  const generateAgent = async ()=>{
-
-    if(!prompt) return
-
-    setLoading(true)
-    setThinking(true)
-    setResult("")
-
-    const res = await fetch("/api/generate",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({prompt})
-    })
-
-    const reader = res.body?.getReader()
-    const decoder = new TextDecoder()
-
-    if(!reader) return
-
-    while(true){
-
-      const {done,value} = await reader.read()
-
-      if(done) break
-
-      const chunk = decoder.decode(value,{stream:true})
-
-      const lines = chunk.split("\n")
-
-      for(const line of lines){
-
-        if(!line.trim()) continue
-
-        try{
-
-          const parsed = JSON.parse(line)
-
-          if(parsed.response){
-
-            setThinking(false)
-
-            setResult(prev => prev + parsed.response)
-
-          }
-
-        }catch{}
-
+      if (error) {
+        console.error("❌ Load error:", error)
+        return
       }
 
+      if (data) {
+        const formatted = data.map((a) => ({
+  id: a.id,
+  name: a.name,
+  goal: a.goal,
+  steps: a.steps ? JSON.parse(a.steps) : [],
+  tools: a.tools ? JSON.parse(a.tools) : [],
+  createdAt: a.created_at ? new Date(a.created_at) : new Date(),
+}))
+
+        setAgents(formatted)
+      }
     }
 
-    setLoading(false)
-
-  }
-
-  const saveAgent = async ()=>{
-
-    if(!result) return
-
-    await supabase.from("agents").insert([
-      {
-        prompt,
-        result
-      }
-    ])
-
     loadAgents()
+  }, [])
 
-  }
-
-  return (
-
-    <div className="flex h-screen bg-[#343541] text-white">
-
-      {/* Sidebar */}
-
-      <div className="w-64 bg-[#202123] p-4 border-r border-gray-800">
-
-        <button
-          onClick={newAgent}
-          className="w-full mb-6 p-3 bg-white text-black rounded font-semibold hover:bg-gray-200"
-        >
-          + New Agent
-        </button>
-
-        <h2 className="text-gray-400 mb-3 text-sm">
-          Saved Agents
-        </h2>
-
-        <div className="space-y-2">
-
-          {agents.length === 0 && (
-            <p className="text-gray-500 text-sm">
-              No agents yet
-            </p>
-          )}
-
-          {agents.map((agent)=>(
-            <div
-              key={agent.id}
-              className="p-2 bg-[#343541] rounded cursor-pointer hover:bg-gray-700 text-sm"
-              onClick={()=>{
-                setPrompt(agent.prompt)
-                setResult(agent.result)
-              }}
-            >
-              {agent.prompt.slice(0,40)}...
-            </div>
-          ))}
-
-        </div>
-
-      </div>
-
-      {/* Main */}
-
-      <div className="flex-1 flex flex-col items-center justify-center p-10">
-
-        <h1 className="text-4xl font-bold mb-2">
-          AMP
-        </h1>
-
-        <p className="text-gray-400 mb-8">
-          Create AI agents with a single prompt
-        </p>
-
-        {/* Prompt */}
-
-        <div className="w-full max-w-xl">
-
-          <input
-            value={prompt}
-            onChange={(e)=>setPrompt(e.target.value)}
-            placeholder="Create an AI agent that researches AI startups..."
-            className="w-full p-4 rounded-lg bg-[#40414f] border border-gray-600 mb-4"
-          />
-
-          <button
-            onClick={generateAgent}
-            className="w-full p-4 rounded-lg bg-white text-black font-semibold hover:bg-gray-200"
-          >
-            {loading ? "Generating..." : "Generate Agent"}
-          </button>
-
-        </div>
-
-        {/* Result */}
-
-        {(loading || result || thinking) && (
-
-          <div className="mt-10 w-full max-w-xl bg-[#40414f] border border-gray-600 rounded-xl p-6">
-
-            <h2 className="text-lg font-semibold mb-4">
-              Agent Plan
-            </h2>
-
-            {thinking && (
-              <p className="text-gray-400 animate-pulse">
-                Thinking...
-              </p>
-            )}
-
-            <div className="prose prose-invert max-w-none">
-              <ReactMarkdown>
-                {result}
-              </ReactMarkdown>
-            </div>
-
-            {!loading && result && (
-
-              <button
-                onClick={saveAgent}
-                className="mt-6 px-4 py-2 bg-green-500 rounded text-black font-semibold"
-              >
-                Save Agent
-              </button>
-
-            )}
-
-          </div>
-
-        )}
-
-      </div>
-
-    </div>
-
+  const selectedAgent = useMemo(
+    () => agents.find((a) => a.id === selectedAgentId) || null,
+    [agents, selectedAgentId]
   )
 
+  // 🔥 GENERATE + SAVE
+  const handleGenerate = useCallback(async (promptValue: string) => {
+    setIsGenerating(true)
+
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+
+    const template =
+      mockAgentTemplates[Math.floor(Math.random() * mockAgentTemplates.length)]
+
+    const words = promptValue.split(" ").slice(0, 3)
+    const agentName =
+      words.length > 0
+        ? words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") +
+          " Agent"
+        : template.name
+
+    const newAgent: AgentData = {
+      id: crypto.randomUUID(),
+      name: agentName,
+      goal: template.goal,
+      steps: template.steps,
+      tools: template.tools,
+      createdAt: new Date(),
+    }
+
+    // 🔥 SAVE TO SUPABASE
+    const { data, error } = await supabase.from("agents").insert([
+      {
+        id: newAgent.id,
+        name: newAgent.name,
+        goal: newAgent.goal,
+        steps: JSON.stringify(newAgent.steps), // ✅ FIX
+        tools: JSON.stringify(newAgent.tools), // ✅ FIX
+        created_at: new Date().toISOString(),  // ✅ FIX
+      },
+    ]).select()
+
+    if (error) {
+      console.error("❌ Supabase Error:", error.message)
+    } else {
+      console.log("✅ Saved:", data)
+    }
+
+    // UI UPDATE
+    setAgents((prev) => [newAgent, ...prev])
+    setSelectedAgentId(newAgent.id)
+    setIsGenerating(false)
+  }, [])
+
+  // 🔥 NEW AGENT
+  const handleNewAgent = useCallback(() => {
+    setSelectedAgentId(null)
+    setPrompt("")
+  }, [])
+
+  // 🔥 DELETE (UI ONLY)
+  const handleDeleteAgent = useCallback((id: string) => {
+    setAgents((prev) => prev.filter((a) => a.id !== id))
+    setSelectedAgentId((prev) => (prev === id ? null : prev))
+  }, [])
+
+  // 🔥 RENAME (UI ONLY)
+  const handleRenameAgent = useCallback((id: string) => {
+    const newName = window.prompt("Enter new agent name:")
+    if (newName?.trim()) {
+      setAgents((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, name: newName.trim() } : a))
+      )
+    }
+  }, [])
+
+  return (
+    <div className="flex h-screen bg-background">
+      <Sidebar
+        agents={agents}
+        selectedAgentId={selectedAgentId}
+        onSelectAgent={setSelectedAgentId}
+        onNewAgent={handleNewAgent}
+        onDeleteAgent={handleDeleteAgent}
+        onRenameAgent={handleRenameAgent}
+        onOpenPricing={() => setIsPricingOpen(true)}
+      />
+
+      <MainPanel
+        selectedAgent={selectedAgent}
+        isGenerating={isGenerating}
+        onGenerate={handleGenerate}
+        onStartDemo={() => setIsDemoOpen(true)}
+        prompt={prompt}
+        setPrompt={setPrompt}
+      />
+
+      <PricingModal
+        isOpen={isPricingOpen}
+        onClose={() => setIsPricingOpen(false)}
+      />
+
+      <DemoWalkthrough
+        isOpen={isDemoOpen}
+        onClose={() => setIsDemoOpen(false)}
+        agentName={selectedAgent?.name || ""}
+      />
+    </div>
+  )
 }

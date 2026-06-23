@@ -16,57 +16,6 @@ interface AgentData {
   createdAt: Date
 }
 
-const mockAgentTemplates = [
-  {
-    name: "Customer Support Agent",
-    goal: "Handle customer inquiries and resolve issues efficiently while maintaining a friendly and professional tone.",
-    steps: [
-      "Greet the customer and identify their issue",
-      "Search knowledge base for relevant solutions",
-      "Provide step-by-step guidance to resolve the problem",
-      "Escalate to human support if unable to resolve",
-      "Follow up to ensure customer satisfaction",
-    ],
-    tools: ["Knowledge Base", "Ticket System", "Email API", "CRM Integration"],
-  },
-  {
-    name: "Research Assistant",
-    goal: "Gather, analyze, and synthesize information from multiple sources to provide comprehensive research summaries.",
-    steps: [
-      "Understand the research topic and scope",
-      "Search academic and web sources for relevant information",
-      "Analyze and cross-reference findings",
-      "Synthesize information into coherent summaries",
-      "Cite sources and highlight key insights",
-    ],
-    tools: ["Web Search", "Academic Database", "PDF Parser", "Citation Generator"],
-  },
-  {
-    name: "Code Review Agent",
-    goal: "Review code submissions for quality, security vulnerabilities, and adherence to best practices.",
-    steps: [
-      "Parse and understand the code structure",
-      "Check for common security vulnerabilities",
-      "Analyze code complexity and performance",
-      "Verify adherence to coding standards",
-      "Generate detailed feedback report",
-    ],
-    tools: ["Static Analyzer", "Security Scanner", "Linter", "Git Integration"],
-  },
-  {
-    name: "Content Writer Agent",
-    goal: "Create engaging, SEO-optimized content tailored to the target audience and brand voice.",
-    steps: [
-      "Analyze content brief and target keywords",
-      "Research topic and gather relevant information",
-      "Create outline and structure content",
-      "Write compelling copy with proper formatting",
-      "Optimize for SEO and readability",
-    ],
-    tools: ["SEO Analyzer", "Grammar Checker", "Plagiarism Detector", "Image Suggester"],
-  },
-]
-
 export default function Dashboard() {
   const [agents, setAgents] = useState<AgentData[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
@@ -84,7 +33,12 @@ export default function Dashboard() {
         .order("created_at", { ascending: false })
 
       if (error) {
-        console.error("❌ Load error:", error)
+        console.error("❌ Load error:", {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        })
         return
       }
 
@@ -114,24 +68,28 @@ export default function Dashboard() {
   const handleGenerate = useCallback(async (promptValue: string) => {
     setIsGenerating(true)
 
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt: promptValue }),
+    })
 
-    const template =
-      mockAgentTemplates[Math.floor(Math.random() * mockAgentTemplates.length)]
+    if (!response.ok) {
+      console.error("❌ Generate Error:", await response.text())
+      setIsGenerating(false)
+      return
+    }
 
-    const words = promptValue.split(" ").slice(0, 3)
-    const agentName =
-      words.length > 0
-        ? words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") +
-          " Agent"
-        : template.name
+    const generatedAgent = await response.json()
 
     const newAgent: AgentData = {
       id: crypto.randomUUID(),
-      name: agentName,
-      goal: template.goal,
-      steps: template.steps,
-      tools: template.tools,
+      name: generatedAgent.name,
+      goal: generatedAgent.goal,
+      steps: generatedAgent.steps,
+      tools: generatedAgent.tools,
       createdAt: new Date(),
     }
 

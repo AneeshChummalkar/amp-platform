@@ -14,18 +14,32 @@ function extractJson(text: string) {
     .replace(/^```\s*/i, "")
     .replace(/\s*```$/i, "")
 
-  return JSON.parse(cleaned)
+  const jsonStart = cleaned.indexOf("{")
+  const jsonEnd = cleaned.lastIndexOf("}")
+
+  if (jsonStart === -1 || jsonEnd === -1 || jsonEnd < jsonStart) {
+    throw new SyntaxError("Gemini response did not contain a JSON object")
+  }
+
+  const jsonText = cleaned
+    .slice(jsonStart, jsonEnd + 1)
+    .replace(/[\u201c\u201d]/g, '"')
+
+  return JSON.parse(jsonText)
 }
 
-function normalizeAgentResponse(value: Partial<AgentResponse>): AgentResponse {
+function normalizeAgentResponse(value: unknown): AgentResponse {
+  const source =
+    value && typeof value === "object" ? (value as Partial<AgentResponse>) : {}
+
   return {
-    name: typeof value.name === "string" ? value.name : "",
-    goal: typeof value.goal === "string" ? value.goal : "",
-    steps: Array.isArray(value.steps)
-      ? value.steps.filter((step): step is string => typeof step === "string")
+    name: typeof source.name === "string" ? source.name : "",
+    goal: typeof source.goal === "string" ? source.goal : "",
+    steps: Array.isArray(source.steps)
+      ? source.steps.filter((step): step is string => typeof step === "string")
       : [],
-    tools: Array.isArray(value.tools)
-      ? value.tools.filter((tool): tool is string => typeof tool === "string")
+    tools: Array.isArray(source.tools)
+      ? source.tools.filter((tool): tool is string => typeof tool === "string")
       : [],
   }
 }
@@ -55,6 +69,7 @@ export async function POST(req: Request) {
 
   const modelName = "gemini-2.5-flash"
   console.log("Gemini model:", modelName)
+  console.log("Gemini API key first 8 chars:", apiKey.slice(0, 8))
 
   const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
   const geminiRequest = {
@@ -93,7 +108,7 @@ Rules:
       ],
       generationConfig: {
         temperature: 0.2,
-        maxOutputTokens: 400,
+        maxOutputTokens: 1200,
         responseMimeType: "application/json",
       },
     }),
@@ -139,7 +154,9 @@ Rules:
     const agent = normalizeAgentResponse(parsed)
 
     return NextResponse.json(agent)
-  } catch {
+  } catch (error) {
+    console.error("Gemini JSON parsing failed:", error)
+
     return NextResponse.json(
       { error: "Failed to parse Gemini JSON response" },
       { status: 502 }

@@ -5,7 +5,7 @@ import { Sidebar } from "@/components/dashboard/sidebar"
 import { MainPanel } from "@/components/dashboard/main-panel"
 import { PricingModal } from "@/components/dashboard/pricing-modal"
 import { DemoWalkthrough } from "@/components/dashboard/demo-walkthrough"
-import { supabase } from "@/lib/supabase"
+import { supabase, supabaseHostname } from "@/lib/supabase"
 
 interface AgentData {
   id: string
@@ -27,6 +27,32 @@ export default function Dashboard() {
   // 🔥 LOAD AGENTS FROM SUPABASE
   useEffect(() => {
     const loadAgents = async () => {
+      console.log("Supabase URL hostname:", supabaseHostname)
+
+      try {
+        const connectionTest = await supabase
+          .from("agents")
+          .select("id")
+          .limit(1)
+
+        console.log("Supabase connection test result:", {
+          ok: !connectionTest.error,
+          error: connectionTest.error
+            ? {
+                message: connectionTest.error.message,
+                code: connectionTest.error.code,
+                details: connectionTest.error.details,
+                hint: connectionTest.error.hint,
+              }
+            : null,
+        })
+      } catch (error) {
+        console.error("Supabase connection test result:", {
+          ok: false,
+          error,
+        })
+      }
+
       const { data, error } = await supabase
         .from("agents")
         .select("*")
@@ -66,23 +92,49 @@ export default function Dashboard() {
 
   // 🔥 GENERATE + SAVE
   const handleGenerate = useCallback(async (promptValue: string) => {
+    console.log("handleGenerate:start")
     setIsGenerating(true)
 
-    const response = await fetch("/api/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ prompt: promptValue }),
-    })
+    let generatedAgent: AgentData
 
-    if (!response.ok) {
-      console.error("❌ Generate Error:", await response.text())
+    try {
+      console.log("handleGenerate:before /api/generate fetch")
+
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt: promptValue }),
+      })
+
+      console.log("handleGenerate:after /api/generate fetch", {
+        ok: response.ok,
+        status: response.status,
+      })
+
+      if (!response.ok) {
+        console.error("❌ Generate Error:", await response.text())
+        setIsGenerating(false)
+        return
+      }
+
+      console.log("handleGenerate:before response.json")
+      generatedAgent = await response.json()
+      console.log("handleGenerate:after response.json", {
+        hasName: typeof generatedAgent.name === "string",
+        steps: Array.isArray(generatedAgent.steps)
+          ? generatedAgent.steps.length
+          : null,
+        tools: Array.isArray(generatedAgent.tools)
+          ? generatedAgent.tools.length
+          : null,
+      })
+    } catch (error) {
+      console.error("handleGenerate:stopped before Supabase insert", error)
       setIsGenerating(false)
       return
     }
-
-    const generatedAgent = await response.json()
 
     const newAgent: AgentData = {
       id: crypto.randomUUID(),
@@ -94,27 +146,62 @@ export default function Dashboard() {
     }
 
     // 🔥 SAVE TO SUPABASE
-    const { data, error } = await supabase.from("agents").insert([
-      {
+    try {
+      console.log("handleGenerate:before Supabase insert", {
         id: newAgent.id,
         name: newAgent.name,
-        goal: newAgent.goal,
-        steps: JSON.stringify(newAgent.steps), // ✅ FIX
-        tools: JSON.stringify(newAgent.tools), // ✅ FIX
-        created_at: new Date().toISOString(),  // ✅ FIX
-      },
-    ]).select()
+      })
 
-    if (error) {
-      console.error("❌ Supabase Error:", error.message)
-    } else {
-      console.log("✅ Saved:", data)
+      const { data, error } = await supabase.from("agents").insert([
+        {
+          id: newAgent.id,
+          name: newAgent.name,
+          goal: newAgent.goal,
+          steps: JSON.stringify(newAgent.steps), // ✅ FIX
+          tools: JSON.stringify(newAgent.tools), // ✅ FIX
+          created_at: new Date().toISOString(),  // ✅ FIX
+        },
+      ]).select()
+
+      console.log("handleGenerate:after Supabase insert", {
+        ok: !error,
+        rows: data?.length ?? 0,
+      })
+
+      console.log("Supabase insert test result:", {
+        ok: !error,
+        error: error
+          ? {
+              message: error.message,
+              code: error.code,
+              details: error.details,
+              hint: error.hint,
+            }
+          : null,
+      })
+
+      if (error) {
+        console.error("❌ Supabase Error:", error.message)
+      } else {
+        console.log("✅ Saved:", data)
+      }
+    } catch (error) {
+      console.error("handleGenerate:stopped during Supabase insert", error)
+      console.error("Supabase insert test result:", {
+        ok: false,
+        error,
+      })
+    } finally {
+      setIsGenerating(false)
     }
 
     // UI UPDATE
+    console.log("handleGenerate:before setAgents")
     setAgents((prev) => [newAgent, ...prev])
+    console.log("handleGenerate:after setAgents")
+    console.log("handleGenerate:before setSelectedAgentId")
     setSelectedAgentId(newAgent.id)
-    setIsGenerating(false)
+    console.log("handleGenerate:after setSelectedAgentId")
   }, [])
 
   // 🔥 NEW AGENT

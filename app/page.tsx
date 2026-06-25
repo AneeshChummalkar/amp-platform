@@ -5,7 +5,9 @@ import { Sidebar } from "@/components/dashboard/sidebar"
 import { MainPanel } from "@/components/dashboard/main-panel"
 import { PricingModal } from "@/components/dashboard/pricing-modal"
 import { DemoWalkthrough } from "@/components/dashboard/demo-walkthrough"
-import { supabase, supabaseHostname } from "@/lib/supabase"
+import { AuthScreen } from "@/components/auth/auth-screen"
+import { supabase } from "@/lib/supabase"
+import type { Session } from "@supabase/supabase-js"
 
 interface AgentData {
   id: string
@@ -16,7 +18,33 @@ interface AgentData {
   createdAt: Date
 }
 
+interface AgentRow {
+  id: string
+  name: string
+  goal: string
+  steps: string | null
+  tools: string | null
+  created_at: string | null
+}
+
+function parseJsonList(value: string | null) {
+  if (!value) {
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : []
+  } catch {
+    return []
+  }
+}
+
 export default function Dashboard() {
+  const [session, setSession] = useState<Session | null>(null)
+  const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [agents, setAgents] = useState<AgentData[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -24,41 +52,52 @@ export default function Dashboard() {
   const [isDemoOpen, setIsDemoOpen] = useState(false)
   const [prompt, setPrompt] = useState("")
 
-  // 🔥 LOAD AGENTS FROM SUPABASE
   useEffect(() => {
-    const loadAgents = async () => {
-      console.log("Supabase URL hostname:", supabaseHostname)
+    let isMounted = true
 
-      try {
-        const connectionTest = await supabase
-          .from("agents")
-          .select("id")
-          .limit(1)
-
-        console.log("Supabase connection test result:", {
-          ok: !connectionTest.error,
-          error: connectionTest.error
-            ? {
-                message: connectionTest.error.message,
-                code: connectionTest.error.code,
-                details: connectionTest.error.details,
-                hint: connectionTest.error.hint,
-              }
-            : null,
-        })
-      } catch (error) {
-        console.error("Supabase connection test result:", {
-          ok: false,
-          error,
-        })
+    supabase.auth.getSession().then(({ data }) => {
+      if (!isMounted) {
+        return
       }
 
+      setSession(data.session)
+      setIsAuthLoading(false)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setIsAuthLoading(false)
+      setSelectedAgentId(null)
+      setPrompt("")
+      setAgents([])
+    })
+
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  // 🔥 LOAD AGENTS FROM SUPABASE
+  useEffect(() => {
+    if (!session?.user.id) {
+      setAgents([])
+      setSelectedAgentId(null)
+      return
+    }
+
+    const loadAgents = async () => {
       const { data, error } = await supabase
         .from("agents")
-        .select("*")
+        .select("id,name,goal,steps,tools,created_at")
+        .eq("user_id", session.user.id)
         .order("created_at", { ascending: false })
 
       if (error) {
+        setAgents([])
+        setSelectedAgentId(null)
         console.error("❌ Load error:", {
           message: error.message,
           code: error.code,
@@ -68,22 +107,20 @@ export default function Dashboard() {
         return
       }
 
-      if (data) {
-        const formatted = data.map((a) => ({
-  id: a.id,
-  name: a.name,
-  goal: a.goal,
-  steps: a.steps ? JSON.parse(a.steps) : [],
-  tools: a.tools ? JSON.parse(a.tools) : [],
-  createdAt: a.created_at ? new Date(a.created_at) : new Date(),
-}))
+      const formatted = ((data || []) as AgentRow[]).map((agent) => ({
+        id: agent.id,
+        name: agent.name,
+        goal: agent.goal,
+        steps: parseJsonList(agent.steps),
+        tools: parseJsonList(agent.tools),
+        createdAt: agent.created_at ? new Date(agent.created_at) : new Date(),
+      }))
 
-        setAgents(formatted)
-      }
+      setAgents(formatted)
     }
 
     loadAgents()
-  }, [])
+  }, [session?.user.id])
 
   const selectedAgent = useMemo(
     () => agents.find((a) => a.id === selectedAgentId) || null,
@@ -92,6 +129,11 @@ export default function Dashboard() {
 
   // 🔥 GENERATE + SAVE
   const handleGenerate = useCallback(async (promptValue: string) => {
+    if (!session?.user.id) {
+      console.error("Cannot generate an agent without an authenticated user.")
+      return
+    }
+
     console.log("handleGenerate:start")
     setIsGenerating(true)
 
@@ -202,6 +244,14 @@ export default function Dashboard() {
     console.log("handleGenerate:before setSelectedAgentId")
     setSelectedAgentId(newAgent.id)
     console.log("handleGenerate:after setSelectedAgentId")
+  }, [session?.user.id])
+
+  const handleSignOut = useCallback(async () => {
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      console.error("❌ Sign out error:", error.message)
+    }
   }, [])
 
   // 🔥 NEW AGENT
@@ -226,6 +276,18 @@ export default function Dashboard() {
     }
   }, [])
 
+  if (isAuthLoading) {
+    return (
+      <main className="flex h-screen items-center justify-center bg-black text-white">
+        <div className="text-sm text-white/50">Loading AMP...</div>
+      </main>
+    )
+  }
+
+  if (!session) {
+    return <AuthScreen />
+  }
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar
@@ -236,6 +298,8 @@ export default function Dashboard() {
         onDeleteAgent={handleDeleteAgent}
         onRenameAgent={handleRenameAgent}
         onOpenPricing={() => setIsPricingOpen(true)}
+        onSignOut={handleSignOut}
+        userEmail={session.user.email ?? null}
       />
 
       <MainPanel

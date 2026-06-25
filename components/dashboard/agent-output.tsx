@@ -1,9 +1,6 @@
 "use client"
 
 import {
-  Target,
-  ListChecks,
-  Wrench,
   Bot,
   Copy,
   Check,
@@ -38,15 +35,11 @@ export function AgentOutput({
 
   // Deploy button delay effect
   useEffect(() => {
-    if (agent && !isGenerating) {
-      const timer = setTimeout(() => {
-        setShowDeploy(true)
-      }, 600)
+    const timer = setTimeout(() => {
+      setShowDeploy(Boolean(agent && !isGenerating))
+    }, agent && !isGenerating ? 600 : 0)
 
-      return () => clearTimeout(timer)
-    } else {
-      setShowDeploy(false)
-    }
+    return () => clearTimeout(timer)
   }, [agent, isGenerating])
 
   const handleCopy = () => {

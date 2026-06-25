@@ -1,6 +1,6 @@
 "use client"
 
-import { Plus, Bot, MoreHorizontal, Trash2, Pencil, CreditCard, Sparkles } from "lucide-react"
+import { Plus, Bot, MoreHorizontal, Trash2, Pencil, CreditCard, Sparkles, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -25,6 +25,8 @@ interface SidebarProps {
   onDeleteAgent: (id: string) => void
   onRenameAgent: (id: string) => void
   onOpenPricing: () => void
+  onSignOut: () => void
+  userEmail: string | null
 }
 
 export function Sidebar({
@@ -35,7 +37,11 @@ export function Sidebar({
   onDeleteAgent,
   onRenameAgent,
   onOpenPricing,
+  onSignOut,
+  userEmail,
 }: SidebarProps) {
+  const userInitial = userEmail?.trim().charAt(0).toUpperCase() || "U"
+
   return (
     <aside className="flex h-screen w-[260px] flex-col bg-sidebar justify-between">
       {/* Logo */}
@@ -136,14 +142,24 @@ export function Sidebar({
         </Button>
         <div className="mt-2 flex items-center gap-3 rounded-xl px-2.5 py-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">
-            U
+            {userInitial}
           </div>
           <div className="flex-1 truncate">
             <p className="truncate text-sm font-medium text-sidebar-foreground">
-              User
+              {userEmail || "User"}
             </p>
             <p className="truncate text-[11px] text-muted-foreground">Free Plan</p>
           </div>
+          <Button
+            onClick={onSignOut}
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0 rounded-lg text-muted-foreground hover:text-sidebar-foreground"
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </aside>

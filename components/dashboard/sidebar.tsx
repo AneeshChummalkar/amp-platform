@@ -22,7 +22,7 @@ interface SidebarProps {
   selectedAgentId: string | null
   onSelectAgent: (id: string | null) => void
   onNewAgent: () => void
-  onDeleteAgent: (id: string) => void
+  onDeleteAgent: (id: string) => void | Promise<void>
   onRenameAgent: (id: string) => void
   onOpenPricing: () => void
   onSignOut: () => void
@@ -99,6 +99,16 @@ export function Sidebar({
                     <Bot className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <span className="truncate">{agent.name}</span>
                   </button>
+                  <Button
+                    onClick={() => onDeleteAgent(agent.id)}
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                    aria-label={`Delete ${agent.name}`}
+                    title="Delete agent"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button

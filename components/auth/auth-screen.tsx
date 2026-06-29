@@ -103,50 +103,83 @@ export function AuthScreen() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-black px-4 text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.12),transparent_36%),radial-gradient(circle_at_80%_80%,rgba(59,130,246,0.12),transparent_28%)]" />
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black px-4 py-10 text-white">
+      <div className="amp-grid absolute inset-0 opacity-55" />
+      <div className="amp-scanlines absolute inset-0" />
+      <div className="absolute inset-0 bg-[linear-gradient(112deg,rgba(125,249,255,0.14),transparent_26%,rgba(168,85,247,0.1)_54%,transparent_78%),linear-gradient(248deg,transparent_12%,rgba(59,130,246,0.14)_42%,transparent_68%)]" />
+      <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-white/[0.08] via-cyan-200/[0.025] to-transparent" />
 
-      <section className="relative grid w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl shadow-black/60 backdrop-blur md:grid-cols-[1fr_420px]">
-        <div className="hidden min-h-[560px] flex-col justify-between border-r border-white/10 p-10 md:flex">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="amp-orbit absolute left-1/2 top-1/2 h-[44rem] w-[44rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-200/10" />
+        <div className="amp-orbit amp-orbit-reverse absolute left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-200/10" />
+        {Array.from({ length: 24 }).map((_, index) => (
+          <span
+            key={index}
+            className="amp-particle absolute h-1 w-1 rounded-full bg-cyan-200/60"
+            style={{
+              left: `${(index * 41) % 100}%`,
+              top: `${(index * 23) % 100}%`,
+              animationDelay: `${index * 0.38}s`,
+              animationDuration: `${8 + (index % 5)}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <section className="amp-energy-border relative grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/12 bg-white/[0.055] p-px shadow-[0_0_120px_rgba(14,165,233,0.16)] backdrop-blur-2xl md:grid-cols-[1fr_430px]">
+        <div className="relative hidden min-h-[580px] flex-col justify-between overflow-hidden border-r border-white/10 bg-black/45 p-10 md:flex">
+          <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
+          <div className="absolute right-8 top-8 h-28 w-28 rounded-full border border-cyan-200/15" />
+          <div className="absolute right-14 top-14 h-16 w-16 rounded-full border border-cyan-200/15" />
+
           <div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-black">
-              <Sparkles className="h-5 w-5" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/12 bg-white/[0.06] text-cyan-100 shadow-[0_0_30px_rgba(34,211,238,0.16)] backdrop-blur-xl">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <span className="text-lg font-semibold tracking-[0.34em] text-white">
+                AMP
+              </span>
             </div>
-            <h1 className="mt-8 text-5xl font-semibold tracking-tight">
-              AMP
+            <h1 className="mt-10 max-w-md text-5xl font-semibold tracking-tight">
+              Hire Your First AI Employee
             </h1>
             <p className="mt-4 max-w-md text-base leading-7 text-white/55">
-              Build, save, and revisit AI agents in your own private workspace.
+              Sign in to continue building autonomous AI employees.
             </p>
           </div>
 
           <div className="grid gap-3 text-sm text-white/55">
-            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-4 py-3">
-              <Bot className="h-4 w-4 text-white" />
-              <span>Generated agents stay tied to your account.</span>
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl">
+              <Bot className="h-4 w-4 text-cyan-100" />
+              <span>Your AI employees stay tied to your account.</span>
             </div>
-            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-4 py-3">
-              <LockKeyhole className="h-4 w-4 text-white" />
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl">
+              <LockKeyhole className="h-4 w-4 text-cyan-100" />
               <span>Your session is restored automatically.</span>
             </div>
           </div>
         </div>
 
-        <div className="p-6 sm:p-8 md:p-10">
+        <div className="relative bg-black/58 p-6 sm:p-8 md:p-10">
+          <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent md:hidden" />
           <div className="mb-8 flex items-center gap-3 md:hidden">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-black">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/12 bg-white/[0.06] text-cyan-100 shadow-[0_0_30px_rgba(34,211,238,0.16)] backdrop-blur-xl">
               <Sparkles className="h-4 w-4" />
             </div>
-            <span className="text-xl font-semibold">AMP</span>
+            <span className="text-lg font-semibold tracking-[0.34em]">AMP</span>
           </div>
 
           <div className="mb-8">
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-white/35">
-              {isSignUp ? "Create account" : "Welcome back"}
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-100/70">
+              {isSignUp ? "Create account" : "Secure access"}
             </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight">
-              {isSignUp ? "Start building agents" : "Sign in to AMP"}
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+              Hire Your First AI Employee
             </h2>
+            <p className="mt-3 text-sm leading-6 text-white/52">
+              Sign in to continue building autonomous AI employees.
+            </p>
           </div>
 
           <div className="space-y-3">
@@ -160,7 +193,7 @@ export function AuthScreen() {
                   variant="outline"
                   disabled={Boolean(oauthLoadingProvider) || isSubmitting}
                   onClick={() => handleOAuthSignIn(provider)}
-                  className="h-12 w-full justify-start rounded-xl border-white/10 bg-black/40 px-4 text-white hover:bg-white/10 hover:text-white"
+                  className="h-12 w-full justify-start rounded-xl border-white/10 bg-white/[0.04] px-4 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-xl hover:border-cyan-200/30 hover:bg-white/[0.08] hover:text-white"
                 >
                   {isLoading ? (
                     <Loader2 className="mr-3 h-4 w-4 animate-spin" />
@@ -181,7 +214,7 @@ export function AuthScreen() {
             <div className="h-px flex-1 bg-white/10" />
           </div>
 
-          <div className="mb-6 grid grid-cols-2 rounded-xl border border-white/10 bg-black/40 p-1">
+          <div className="mb-6 grid grid-cols-2 rounded-xl border border-white/10 bg-white/[0.04] p-1 backdrop-blur-xl">
             {(["sign-in", "sign-up"] as AuthMode[]).map((item) => (
               <button
                 key={item}
@@ -194,7 +227,7 @@ export function AuthScreen() {
                 className={cn(
                   "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   mode === item
-                    ? "bg-white text-black"
+                    ? "bg-white text-black shadow-[0_0_24px_rgba(255,255,255,0.16)]"
                     : "text-white/50 hover:text-white"
                 )}
               >
@@ -217,7 +250,7 @@ export function AuthScreen() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   required
-                  className="h-12 border-white/10 bg-black/40 pl-10 text-white placeholder:text-white/25"
+                  className="h-12 rounded-xl border-white/10 bg-white/[0.04] pl-10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-white/25 focus-visible:ring-cyan-200/30"
                   placeholder="you@example.com"
                 />
               </div>
@@ -240,7 +273,7 @@ export function AuthScreen() {
                   onChange={(event) => setPassword(event.target.value)}
                   required
                   minLength={6}
-                  className="h-12 border-white/10 bg-black/40 pl-10 text-white placeholder:text-white/25"
+                  className="h-12 rounded-xl border-white/10 bg-white/[0.04] pl-10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-white/25 focus-visible:ring-cyan-200/30"
                   placeholder="At least 6 characters"
                 />
               </div>
@@ -261,7 +294,7 @@ export function AuthScreen() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-12 w-full rounded-xl bg-white text-black hover:bg-white/90"
+              className="h-12 w-full rounded-xl bg-white font-semibold text-black shadow-[0_0_45px_rgba(255,255,255,0.22)] hover:bg-cyan-100"
             >
               {isSubmitting ? (
                 <>

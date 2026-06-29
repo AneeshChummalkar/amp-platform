@@ -1,9 +1,7 @@
 "use client"
 
 import { useState, useCallback, useMemo, useEffect } from "react"
-import { Sidebar } from "@/components/dashboard/sidebar"
 import { MainPanel } from "@/components/dashboard/main-panel"
-import { PricingModal } from "@/components/dashboard/pricing-modal"
 import { DemoWalkthrough } from "@/components/dashboard/demo-walkthrough"
 import { AuthScreen } from "@/components/auth/auth-screen"
 import { supabase } from "@/lib/supabase"
@@ -42,13 +40,16 @@ function parseJsonList(value: string | null) {
   }
 }
 
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export default function Dashboard() {
   const [session, setSession] = useState<Session | null>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [agents, setAgents] = useState<AgentData[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [isPricingOpen, setIsPricingOpen] = useState(false)
   const [isDemoOpen, setIsDemoOpen] = useState(false)
   const [prompt, setPrompt] = useState("")
 
@@ -136,6 +137,7 @@ export default function Dashboard() {
 
     console.log("handleGenerate:start")
     setIsGenerating(true)
+    const cinematicReveal = wait(6200)
 
     let generatedAgent: AgentData
 
@@ -157,6 +159,7 @@ export default function Dashboard() {
 
       if (!response.ok) {
         console.error("❌ Generate Error:", await response.text())
+        await cinematicReveal
         setIsGenerating(false)
         return
       }
@@ -174,6 +177,7 @@ export default function Dashboard() {
       })
     } catch (error) {
       console.error("handleGenerate:stopped before Supabase insert", error)
+      await cinematicReveal
       setIsGenerating(false)
       return
     }
@@ -197,6 +201,7 @@ export default function Dashboard() {
       const { data, error } = await supabase.from("agents").insert([
         {
           id: newAgent.id,
+          user_id: session.user.id,
           name: newAgent.name,
           goal: newAgent.goal,
           steps: JSON.stringify(newAgent.steps), // ✅ FIX
@@ -224,6 +229,7 @@ export default function Dashboard() {
 
       if (error) {
         console.error("❌ Supabase Error:", error.message)
+        return
       } else {
         console.log("✅ Saved:", data)
       }
@@ -233,7 +239,9 @@ export default function Dashboard() {
         ok: false,
         error,
       })
+      return
     } finally {
+      await cinematicReveal
       setIsGenerating(false)
     }
 
@@ -260,21 +268,36 @@ export default function Dashboard() {
     setPrompt("")
   }, [])
 
-  // 🔥 DELETE (UI ONLY)
-  const handleDeleteAgent = useCallback((id: string) => {
+  // 🔥 DELETE FROM SUPABASE
+  const handleDeleteAgent = useCallback(async (id: string) => {
+    if (!session?.user.id) {
+      console.error("Cannot delete an agent without an authenticated user.")
+      return
+    }
+
+    if (!window.confirm("Delete this agent?")) {
+      return
+    }
+
+    const { error } = await supabase
+      .from("agents")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", session.user.id)
+
+    if (error) {
+      console.error("❌ Delete error:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      })
+      return
+    }
+
     setAgents((prev) => prev.filter((a) => a.id !== id))
     setSelectedAgentId((prev) => (prev === id ? null : prev))
-  }, [])
-
-  // 🔥 RENAME (UI ONLY)
-  const handleRenameAgent = useCallback((id: string) => {
-    const newName = window.prompt("Enter new agent name:")
-    if (newName?.trim()) {
-      setAgents((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, name: newName.trim() } : a))
-      )
-    }
-  }, [])
+  }, [session?.user.id])
 
   if (isAuthLoading) {
     return (
@@ -289,31 +312,21 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar
-        agents={agents}
-        selectedAgentId={selectedAgentId}
-        onSelectAgent={setSelectedAgentId}
-        onNewAgent={handleNewAgent}
-        onDeleteAgent={handleDeleteAgent}
-        onRenameAgent={handleRenameAgent}
-        onOpenPricing={() => setIsPricingOpen(true)}
-        onSignOut={handleSignOut}
-        userEmail={session.user.email ?? null}
-      />
-
+    <div className="min-h-screen bg-black">
       <MainPanel
+        agents={agents}
         selectedAgent={selectedAgent}
+        selectedAgentId={selectedAgentId}
         isGenerating={isGenerating}
         onGenerate={handleGenerate}
+        onSelectAgent={setSelectedAgentId}
+        onDeleteAgent={handleDeleteAgent}
+        onNewAgent={handleNewAgent}
+        onSignOut={handleSignOut}
         onStartDemo={() => setIsDemoOpen(true)}
         prompt={prompt}
         setPrompt={setPrompt}
-      />
-
-      <PricingModal
-        isOpen={isPricingOpen}
-        onClose={() => setIsPricingOpen(false)}
+        userEmail={session.user.email ?? null}
       />
 
       <DemoWalkthrough

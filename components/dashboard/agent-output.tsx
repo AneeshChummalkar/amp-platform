@@ -33,10 +33,10 @@ interface AgentOutputProps {
 
 const buildStages = [
   "Understanding your mission...",
-  "Designing your AI employee...",
+  "Designing your AI Agent...",
   "Connecting required systems...",
-  "Preparing deployment plan...",
   "Building execution strategy...",
+  "Preparing deployment...",
 ]
 
 function estimateComplexity(agent: AgentData) {
@@ -54,7 +54,8 @@ function estimateComplexity(agent: AgentData) {
 }
 
 function estimateImpact(agent: AgentData) {
-  const text = `${agent.name} ${agent.goal} ${agent.steps.join(" ")} ${agent.tools.join(" ")}`.toLowerCase()
+  const text =
+    `${agent.name} ${agent.goal} ${agent.steps.join(" ")} ${agent.tools.join(" ")}`.toLowerCase()
 
   if (text.includes("email") || text.includes("gmail") || text.includes("report")) {
     return { time: "3 hours/week", efficiency: "85%" }
@@ -71,8 +72,8 @@ function estimateImpact(agent: AgentData) {
   return { time: "4 hours/week", efficiency: "80%" }
 }
 
-function employeeName(name: string) {
-  return name.trim() ? name.trim().toUpperCase() : "AUTONOMOUS EMPLOYEE AI"
+function agentName(name: string) {
+  return name.trim() ? name.trim().toUpperCase() : "AUTONOMOUS AI AGENT"
 }
 
 function normalizeItem(value: string) {
@@ -96,12 +97,13 @@ function titleCase(value: string) {
 }
 
 function classifyAgent(agent: AgentData) {
-  const text = `${agent.name} ${agent.goal} ${agent.steps.join(" ")} ${agent.tools.join(" ")}`.toLowerCase()
+  const text =
+    `${agent.name} ${agent.goal} ${agent.steps.join(" ")} ${agent.tools.join(" ")}`.toLowerCase()
 
   if (text.includes("gmail") || text.includes("email") || text.includes("inbox")) {
     return {
       mission:
-        "Your AI employee will continuously monitor your inbox, detect important messages, summarize what matters, and deliver reliable follow-up reports.",
+        "Your AI Agent will continuously monitor your inbox, detect important messages, summarize what matters, and deliver reliable follow-up reports.",
       capabilities: [
         "Inbox Monitoring",
         "Priority Detection",
@@ -117,7 +119,7 @@ function classifyAgent(agent: AgentData) {
   if (text.includes("stock") || text.includes("analyst") || text.includes("market")) {
     return {
       mission:
-        "Your AI employee will track market signals, research companies, summarize risks, and prepare analyst-grade briefings on a recurring cadence.",
+        "Your AI Agent will track market signals, research companies, summarize risks, and prepare analyst-grade briefings on a recurring cadence.",
       capabilities: [
         "Market Monitoring",
         "Signal Detection",
@@ -133,7 +135,7 @@ function classifyAgent(agent: AgentData) {
   if (text.includes("gym") || text.includes("fitness") || text.includes("workout")) {
     return {
       mission:
-        "Your AI employee will plan training, adapt workouts, track progress, and keep your fitness routine moving without constant manual planning.",
+        "Your AI Agent will plan training, adapt workouts, track progress, and keep your fitness routine moving without constant manual planning.",
       capabilities: [
         "Workout Planning",
         "Progress Tracking",
@@ -149,7 +151,7 @@ function classifyAgent(agent: AgentData) {
   if (text.includes("study") || text.includes("planner") || text.includes("school")) {
     return {
       mission:
-        "Your AI employee will organize study goals, break work into sessions, track deadlines, and turn scattered material into focused study plans.",
+        "Your AI Agent will organize study goals, break work into sessions, track deadlines, and turn scattered material into focused study plans.",
       capabilities: [
         "Schedule Planning",
         "Deadline Tracking",
@@ -165,7 +167,7 @@ function classifyAgent(agent: AgentData) {
   if (text.includes("code") || text.includes("coding") || text.includes("developer")) {
     return {
       mission:
-        "Your AI employee will inspect code context, plan implementation work, propose changes, and accelerate repetitive engineering tasks.",
+        "Your AI Agent will inspect code context, plan implementation work, propose changes, and accelerate repetitive engineering tasks.",
       capabilities: [
         "Codebase Analysis",
         "Implementation Planning",
@@ -195,8 +197,8 @@ function classifyAgent(agent: AgentData) {
 
   return {
     mission: mission
-      ? `Your AI employee will ${mission}.`
-      : "Your AI employee will turn the requested mission into an autonomous operating plan.",
+      ? `Your AI Agent will ${mission}.`
+      : "Your AI Agent will turn the requested mission into an autonomous operating plan.",
     capabilities: capabilities.length
       ? capabilities
       : ["Autonomous Planning", "Priority Detection", "Execution Monitoring"],
@@ -220,13 +222,15 @@ export function AgentOutput({
     }
 
     const resetTimer = window.setTimeout(() => setActiveStage(0), 0)
-    const interval = window.setInterval(() => {
-      setActiveStage((current) => (current + 1) % buildStages.length)
-    }, 1150)
+    const stageTimers = buildStages.slice(1).map((_, index) =>
+      window.setTimeout(() => {
+        setActiveStage(index + 1)
+      }, (index + 1) * 1000)
+    )
 
     return () => {
       window.clearTimeout(resetTimer)
-      window.clearInterval(interval)
+      stageTimers.forEach((timer) => window.clearTimeout(timer))
     }
   }, [isGenerating])
 
@@ -253,7 +257,7 @@ export function AgentOutput({
   const handleCopy = () => {
     if (!agent || !profile) return
 
-    const text = `${employeeName(agent.name)}
+    const text = `${agentName(agent.name)}
 
 MISSION ACCEPTED
 ${profile.mission}
@@ -265,14 +269,17 @@ INTEGRATIONS
 ${profile.integrations.map((item) => `- ${item}`).join("\n")}
 
 DEPLOYMENT PROFILE
-Agent Type: Cloud Autonomous Employee
+Agent Type: Cloud Autonomous Agent
 Runtime: 24/7
 Execution: ${profile.execution}
 Complexity: ${profile.complexity}
 
-PROJECTED IMPACT
+ESTIMATED IMPACT
 Estimated time saved: ${profile.impact.time}
-Efficiency gain: ${profile.impact.efficiency}`
+Efficiency gain: ${profile.impact.efficiency}
+
+EXECUTION STRATEGY
+${agent.steps.map((item, index) => `${index + 1}. ${normalizeItem(item)}`).join("\n")}`
 
     navigator.clipboard.writeText(text)
     setCopied(true)
@@ -358,15 +365,18 @@ Efficiency gain: ${profile.impact.efficiency}`
           <div className="relative border-b border-white/10 p-6 sm:p-9">
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-white/42">
+                  AI Agent Name
+                </p>
                 <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-200/20 bg-cyan-200/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-cyan-100">
                   <ShieldCheck className="h-3.5 w-3.5" />
                   Mission accepted
                 </div>
                 <h2 className="max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-6xl">
-                  {employeeName(agent.name)}
+                  {agentName(agent.name)}
                 </h2>
                 <p className="mt-4 text-sm font-semibold uppercase tracking-[0.45em] text-cyan-100/70">
-                  Autonomous employee created
+                  Autonomous agent created
                 </p>
                 <p className="mt-5 max-w-3xl text-lg leading-8 text-white/68">
                   {profile.mission}
@@ -379,8 +389,8 @@ Efficiency gain: ${profile.impact.efficiency}`
                   size="icon"
                   onClick={onStartDemo}
                   className="rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-                  aria-label="Preview employee"
-                  title="Preview employee"
+                  aria-label="Preview AI Agent"
+                  title="Preview AI Agent"
                 >
                   <Play className="h-4 w-4" />
                 </Button>
@@ -389,8 +399,8 @@ Efficiency gain: ${profile.impact.efficiency}`
                   size="icon"
                   onClick={handleCopy}
                   className="rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-                  aria-label="Copy deployment profile"
-                  title="Copy deployment profile"
+                  aria-label="Copy agent profile"
+                  title="Copy agent profile"
                 >
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </Button>
@@ -438,7 +448,7 @@ Efficiency gain: ${profile.impact.efficiency}`
               </h3>
               <dl className="grid gap-4 text-sm">
                 {[
-                  ["Agent Type", "Cloud Autonomous Employee"],
+                  ["Agent Type", "Cloud Autonomous Agent"],
                   ["Runtime", "24/7"],
                   ["Execution", profile.execution],
                   ["Complexity", profile.complexity],
@@ -454,7 +464,7 @@ Efficiency gain: ${profile.impact.efficiency}`
             <div className="bg-black/45 p-6 sm:p-8">
               <h3 className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-white/42">
                 <Clock3 className="h-4 w-4 text-emerald-200" />
-                Projected impact
+                Estimated impact
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -475,6 +485,33 @@ Efficiency gain: ${profile.impact.efficiency}`
                 </div>
               </div>
             </div>
+
+            <div className="bg-black/45 p-6 md:col-span-2 sm:p-8">
+              <h3 className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-white/42">
+                <Brain className="h-4 w-4 text-cyan-200" />
+                Execution strategy
+              </h3>
+              <div className="grid gap-3">
+                {agent.steps.length ? (
+                  agent.steps.map((item, index) => (
+                    <div
+                      key={`${item}-${index}`}
+                      className="flex items-start gap-3 text-white/78"
+                    >
+                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-cyan-200/20 bg-cyan-200/10 text-xs font-semibold text-cyan-100">
+                        {index + 1}
+                      </span>
+                      <span className="leading-6">{normalizeItem(item)}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm leading-6 text-white/58">
+                    The agent will convert the accepted mission into an
+                    autonomous execution loop.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
           {showDeploy ? (
@@ -492,7 +529,7 @@ Efficiency gain: ${profile.impact.efficiency}`
                 <span className="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-cyan-200 to-transparent transition duration-700 group-hover:translate-x-[120%]" />
                 <span className="relative flex items-center justify-center gap-3">
                   <Rocket className="h-5 w-5" />
-                  DEPLOY AI EMPLOYEE
+                  Deploy AI Agent
                 </span>
               </button>
             </motion.div>

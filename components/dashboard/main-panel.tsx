@@ -94,7 +94,7 @@ export function MainPanel({
           type="button"
           onClick={onNewAgent}
           className="group flex items-center gap-3"
-          aria-label="Create a new AI employee"
+          aria-label="Create a new AI Agent"
         >
           <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/12 bg-white/[0.06] shadow-[0_0_30px_rgba(34,211,238,0.14)] backdrop-blur-xl">
             <Sparkles className="h-4 w-4 text-cyan-100" />
@@ -110,10 +110,10 @@ export function MainPanel({
             onClick={() => setIsArchiveOpen((value) => !value)}
             className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 text-sm text-white/68 backdrop-blur-xl transition hover:border-cyan-200/30 hover:bg-white/[0.08] hover:text-white sm:px-4"
             aria-expanded={isArchiveOpen}
-            aria-label="Open employee archive"
+            aria-label="Open AI Agent history"
           >
             <Bot className="h-4 w-4" />
-            <span className="hidden sm:inline">{agents.length} hired</span>
+            <span className="hidden sm:inline">{agents.length} agents</span>
             <ChevronDown
               className={cn(
                 "hidden h-4 w-4 transition sm:block",
@@ -156,10 +156,10 @@ export function MainPanel({
             <div className="flex items-center justify-between px-2 py-2">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-white/42">
-                  Employee archive
+                  AI Agent history
                 </p>
                 <p className="mt-1 text-sm text-white/58">
-                  Select a saved deployment
+                  Select a saved agent
                 </p>
               </div>
               <Bot className="h-5 w-5 text-cyan-100/70" />
@@ -173,7 +173,7 @@ export function MainPanel({
                     animate={{ opacity: 1 }}
                     className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-8 text-center text-sm text-white/38"
                   >
-                    No AI employees hired yet.
+                    No AI Agents created yet.
                   </motion.div>
                 ) : (
                   agents.map((agent) => (
@@ -200,14 +200,14 @@ export function MainPanel({
                           className="min-w-0 flex-1 text-left"
                         >
                           <p className="truncate text-sm font-medium text-white">
-                            {agent.name || "Untitled employee"}
+                            {agent.name || "Untitled AI Agent"}
                           </p>
                           <p className="mt-1 line-clamp-2 text-xs leading-5 text-white/42">
                             {agent.goal}
                           </p>
                           <p className="mt-3 flex items-center gap-1.5 text-[11px] text-white/32">
                             <Clock3 className="h-3 w-3" />
-                            Hired {formatTime(agent.createdAt)}
+                            Created {formatTime(agent.createdAt)}
                           </p>
                         </button>
 
@@ -216,7 +216,7 @@ export function MainPanel({
                           onClick={() => onDeleteAgent(agent.id)}
                           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/35 opacity-0 transition hover:bg-red-500/10 hover:text-red-200 group-hover:opacity-100"
                           aria-label={`Delete ${agent.name}`}
-                          title="Delete employee"
+                          title="Delete AI Agent"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -241,20 +241,20 @@ export function MainPanel({
             >
               <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-200/20 bg-cyan-200/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-cyan-100/80 backdrop-blur-xl">
                 <Radar className="h-3.5 w-3.5 animate-pulse" />
-                AI employee deployment platform
+                AI Agent Platform
               </div>
 
               <h1 className="text-5xl font-semibold tracking-tight text-white sm:text-7xl lg:text-8xl">
                 Build Autonomous
                 <span className="block bg-gradient-to-r from-white via-cyan-100 to-blue-200 bg-clip-text text-transparent">
-                  AI Employees
+                  AI Agents
                 </span>
               </h1>
 
               <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-white/55 sm:text-xl">
-                Describe the work.
+                Describe the mission.
                 <br />
-                We&apos;ll build the worker.
+                We&apos;ll build the agent.
               </p>
 
               <div className="mx-auto mt-10 max-w-3xl">

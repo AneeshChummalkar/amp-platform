@@ -44,6 +44,9 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+const CREATION_STAGE_DURATION_MS = 1000
+const CREATION_STAGE_COUNT = 5
+
 export default function Dashboard() {
   const [session, setSession] = useState<Session | null>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
@@ -137,7 +140,7 @@ export default function Dashboard() {
 
     console.log("handleGenerate:start")
     setIsGenerating(true)
-    const cinematicReveal = wait(6200)
+    const creationStages = wait(CREATION_STAGE_DURATION_MS * CREATION_STAGE_COUNT)
 
     let generatedAgent: AgentData
 
@@ -159,7 +162,7 @@ export default function Dashboard() {
 
       if (!response.ok) {
         console.error("❌ Generate Error:", await response.text())
-        await cinematicReveal
+        await creationStages
         setIsGenerating(false)
         return
       }
@@ -177,7 +180,7 @@ export default function Dashboard() {
       })
     } catch (error) {
       console.error("handleGenerate:stopped before Supabase insert", error)
-      await cinematicReveal
+      await creationStages
       setIsGenerating(false)
       return
     }
@@ -241,7 +244,7 @@ export default function Dashboard() {
       })
       return
     } finally {
-      await cinematicReveal
+      await creationStages
       setIsGenerating(false)
     }
 

@@ -45,7 +45,7 @@ export function PromptInput({
                   }
                 }
               }}
-              placeholder="Describe the work your AI employee should own..."
+              placeholder="Describe the mission your AI Agent should own..."
               className="min-h-[112px] flex-1 resize-none bg-transparent pt-2 text-lg leading-7 text-white outline-none placeholder:text-white/32 sm:text-xl sm:leading-8"
             />
           </div>
@@ -58,7 +58,7 @@ export function PromptInput({
           >
             <span className="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-cyan-200/80 to-transparent transition duration-700 group-hover:translate-x-[120%]" />
             <span className="relative flex items-center justify-center gap-2">
-              {isGenerating ? "Building..." : "Generate AI Employee"}
+              {isGenerating ? "Building..." : "Generate AI Agent"}
               <ArrowUp className="h-4 w-4" />
             </span>
           </button>
